@@ -1,12 +1,12 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import Table from './Components/Table';
+import mockData from './Mock_Data.json'
 
 function App() {
   return (
     <div className="App">
-      <Table/>
+      <Table tableName={"Attendance Table"} mockData={mockData}/>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import React from "react";
-import mockData from "../Mock_Data.json";
 import { useTable, Column, CellProps } from "react-table";
 
 // Project:     Reactjs Practice
@@ -9,21 +8,10 @@ import { useTable, Column, CellProps } from "react-table";
 // Date:        10 Nov 2024
 
 // Logic:
-// - Generates table columns dynamically based on a date range, correctly formatted date headers.
-// - Formats initial table data to include all days in the month, initializing values as empty strings.
-
-// UI Behavior:
-// - Renders a table with headers for each day of the month, alongside columns for employee ID and name.
-// - Marks a cell with "A" if the employee was absent on that day, based on the leaves data provided in `mockData`.
-// - Uses React hooks (useMemo) to optimize column and data generation for performance.
-
-// Screen Data:
-// - Data Source: Reads data from `Mock_Data.json`.
-// - Column Generation: `generateDateColumns()` function creates date-specific columns from a given date range.
-// - Data Formatting: `formatTableData()` ensures all employees have pre-initialized empty attendance fields.
-
-// Screen Data Validation Rules:
-// - Validates that each date is checked against a formatted, zero-padded string for consistency.
+// This component gets Table name and json data as props and renders a table using React-table.
+// Generates table columns dynamically based on current month and year, correctly formatted date headers.
+// Generates a row to display the correct day. and displays Employee attendance
+//
 
 interface Employee {
   id: number;
@@ -31,10 +19,17 @@ interface Employee {
   leaves: string; // Comma-separated leave dates
 }
 
-function generateDateColumns(
-  startDate: Date,
-  endDate: Date
-): Column<Employee>[] {
+interface tableProps {
+  tableName: string;
+  mockData: Employee[];
+}
+
+// Utility function to get the last date of the given month and year
+function getLastDateOfMonth(year: number, month: number): Date {
+  return new Date(year, month + 1, 0); // Sets date to 0 to get the last day of the previous month
+}
+
+function generateDateColumns(year: number, month: number): Column<Employee>[] {
   const columns: Column<Employee>[] = [
     { Header: "ID", accessor: "id" },
     { Header: "Name", accessor: "name" },
@@ -42,9 +37,13 @@ function generateDateColumns(
 
   const existingColumnHeaders = new Set<string>();
 
+  const startDate = new Date(year, month, 1);
+  const endDate = getLastDateOfMonth(year, month);
+
   let currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     const dateKey = currentDate.getDate().toString().padStart(2, "0");
+    // const dayOfWeek = currentDate.toLocaleString("en-US", { weekday: "short" });
 
     // Check for duplicate before adding
     if (!existingColumnHeaders.has(dateKey)) {
@@ -55,7 +54,7 @@ function generateDateColumns(
           const leaveDays = row.original.leaves
             .split(",")
             .map((day: string) => day.trim());
-          return <span>{leaveDays.includes(dateKey) ? "A" : ""}</span>;
+          return <span>{leaveDays.includes(dateKey) ? "A" : "P"}</span>;
         },
       });
       existingColumnHeaders.add(dateKey);
@@ -69,7 +68,7 @@ function generateDateColumns(
 function formatTableData(data: Employee[]): Employee[] {
   return data.map((employee) => {
     const formattedEmployee: any = { ...employee };
-    for (let day = 0; day <= 31; day++) {
+    for (let day = 1; day <= 31; day++) {
       const dayString = day.toString().padStart(2, "0");
       formattedEmployee[dayString] = "";
     }
@@ -77,14 +76,19 @@ function formatTableData(data: Employee[]): Employee[] {
   });
 }
 
-const Table = () => {
+const Table = ({ tableName, mockData }: tableProps) => {
   // dynamic value
-  const startDate = new Date(2024, 10, 1);
-  const endDate = new Date(2024, 10, 31);
+  // Using current month and year
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  // const startDate = new Date(year, month, 1);
+  const endDate = getLastDateOfMonth(year, month);
   const data = React.useMemo(() => formatTableData(mockData), []);
   const columns = React.useMemo(
-    () => generateDateColumns(startDate, endDate),
-    []
+    () => generateDateColumns(year, month),
+    [year, month]
   );
 
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
@@ -92,6 +96,7 @@ const Table = () => {
 
   return (
     <div>
+      <h1 className="name">{tableName}</h1>
       <div className="container">
         <table {...getTableProps()}>
           <thead>
@@ -104,6 +109,17 @@ const Table = () => {
                 ))}
               </tr>
             ))}
+            {/* Days Row */}
+            <tr>
+              <th colSpan={2}></th> {/* Empty cells for ID and Name columns */}
+              {Array.from({ length: endDate.getDate() }).map((_, index) => {
+                const date = new Date(year, month, index + 1);
+                const dayOfWeek = date.toLocaleString("en-US", {
+                  weekday: "short",
+                });
+                return <th key={index}>{dayOfWeek}</th>;
+              })}
+            </tr>
           </thead>
           <tbody {...getTableBodyProps()}>
             {rows.map((row) => {
