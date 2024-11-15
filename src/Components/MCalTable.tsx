@@ -10,11 +10,10 @@ import { useTable, Column, CellProps } from "react-table";
 // Logic:
 // This component gets Table name and json data as props and renders a table using React-table.
 // Generates table columns dynamically based on current month and year, correctly formatted date headers.
-// Generates a row to display the correct day. and displays Employee attendance
+// Generates a row to display the correct day and displays Employee attendance. Absent cells have red background and 
+// holidays have gray background
 //
 
-// MCalTable.tsx it has row- days
-// Original table - DataTable.component
 
 interface Employee {
   id: number;
@@ -127,9 +126,9 @@ const Table = ({ tableName, mockData }: tableProps) => {
                 return (
                   <th
                     key={index}
-                    // className={`${
-                    //   dayOfWeek === "Sat" || "Sun" ? "bg-secondary" : ""
-                    // }`}
+                    className={`${
+                      dayOfWeek === "Sat" || dayOfWeek === "Sun" ? "bg-secondary" : ""
+                    }`}
                   >
                     {dayOfWeek}
                   </th>
@@ -157,17 +156,12 @@ const Table = ({ tableName, mockData }: tableProps) => {
                       const isLeaveDay = leaveDays.includes(cell.column.id);
 
                       // styling
-                      const cellStyle = {
-                        backgroundColor: isWeekend
-                          ? "gray"
-                          : isLeaveDay
-                          ? "lightcoral"
-                          : "",
-                        color: isWeekend ? "white" : "#000",
-                      };
+                      const cellStyle =  `text-center ${
+                        isWeekend ? "bg-secondary bg-opacity-50 text-white" : ""
+                      } ${isLeaveDay ? "bg-danger bg-opacity-75 text-white" : ""}`;
 
                       return (
-                        <td {...cell.getCellProps()} style={cellStyle}>
+                        <td {...cell.getCellProps()} className={cellStyle}>
                           {cell.render("Cell")}
                         </td>
                       );

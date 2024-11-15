@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
-import Table from './Components/Table';
-import mockData from './Mock_Data.json'
+import Table from './Components/MCalTable';
+import mockData from './My_Mock_Data.json'
 
 function App() {
   return (
