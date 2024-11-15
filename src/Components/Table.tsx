@@ -13,6 +13,9 @@ import { useTable, Column, CellProps } from "react-table";
 // Generates a row to display the correct day. and displays Employee attendance
 //
 
+// MCalTable.tsx it has row- days
+// Original table - DataTable.component
+
 interface Employee {
   id: number;
   name: string;
@@ -43,7 +46,7 @@ function generateDateColumns(year: number, month: number): Column<Employee>[] {
   let currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     const dateKey = currentDate.getDate().toString().padStart(2, "0");
-    // const dayOfWeek = currentDate.toLocaleString("en-US", { weekday: "short" });
+    const dayOfWeek = currentDate.getDay(); // 0 for Sunday, 6 for Saturday
 
     // Check for duplicate before adding
     if (!existingColumnHeaders.has(dateKey)) {
@@ -54,10 +57,14 @@ function generateDateColumns(year: number, month: number): Column<Employee>[] {
           const leaveDays = row.original.leaves
             .split(",")
             .map((day: string) => day.trim());
-          return <span>{leaveDays.includes(dateKey) ? "A" : "P"}</span>;
+
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const isLeaveDay = leaveDays.includes(dateKey);
+
+          return <span>{isWeekend ? "-" : isLeaveDay ? "A" : "P"}</span>;
         },
       });
-      existingColumnHeaders.add(dateKey);
+      // existingColumnHeaders.add(dateKey);
     }
 
     currentDate.setDate(currentDate.getDate() + 1);
@@ -85,7 +92,7 @@ const Table = ({ tableName, mockData }: tableProps) => {
 
   // const startDate = new Date(year, month, 1);
   const endDate = getLastDateOfMonth(year, month);
-  const data = React.useMemo(() => formatTableData(mockData), []);
+  const data = React.useMemo(() => formatTableData(mockData), [mockData]);
   const columns = React.useMemo(
     () => generateDateColumns(year, month),
     [year, month]
@@ -117,7 +124,16 @@ const Table = ({ tableName, mockData }: tableProps) => {
                 const dayOfWeek = date.toLocaleString("en-US", {
                   weekday: "short",
                 });
-                return <th key={index}>{dayOfWeek}</th>;
+                return (
+                  <th
+                    key={index}
+                    // className={`${
+                    //   dayOfWeek === "Sat" || "Sun" ? "bg-secondary" : ""
+                    // }`}
+                  >
+                    {dayOfWeek}
+                  </th>
+                );
               })}
             </tr>
           </thead>
@@ -125,10 +141,43 @@ const Table = ({ tableName, mockData }: tableProps) => {
             {rows.map((row) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps()}>
-                  {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
-                  ))}
+                <tr {...row.getRowProps()} key={row.id}>
+                  {row.cells.map((cell) => {
+                    const columnDay = parseInt(cell.column.id, 10);
+
+                    // Check if columnDay is a valid date to prevent issues with ID/Name columns
+                    if (!isNaN(columnDay)) {
+                      const cellDate = new Date(year, month, columnDay);
+                      const isWeekend =
+                        cellDate.getDay() === 0 || cellDate.getDay() === 6;
+                      // Check if the current day is in the leaveDays list
+                      const leaveDays = row.original.leaves
+                        .split(",")
+                        .map((day: string) => day.trim());
+                      const isLeaveDay = leaveDays.includes(cell.column.id);
+
+                      // styling
+                      const cellStyle = {
+                        backgroundColor: isWeekend
+                          ? "gray"
+                          : isLeaveDay
+                          ? "lightcoral"
+                          : "",
+                        color: isWeekend ? "white" : "#000",
+                      };
+
+                      return (
+                        <td {...cell.getCellProps()} style={cellStyle}>
+                          {cell.render("Cell")}
+                        </td>
+                      );
+                    } else {
+                      // Default cell rendering for non-date columns (e.g., ID, Name)
+                      return (
+                        <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                      );
+                    }
+                  })}
                 </tr>
               );
             })}
